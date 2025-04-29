@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>USTAD AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-white">
+  <div class="max-w-2xl mx-auto p-4">
+    <h1 class="text-3xl font-bold text-center mb-6">USTAD AI</h1>
+
+    <!-- Form Biodata -->
+    <div id="form-section" class="space-y-4">
+      <input type="text" id="nama" placeholder="Nama" class="w-full p-2 border rounded" />
+      <input type="number" id="usia" placeholder="Usia" class="w-full p-2 border rounded" />
+      <select id="gender" class="w-full p-2 border rounded">
+        <option value="">Pilih Gender</option>
+        <option value="Laki-laki">Laki-laki</option>
+        <option value="Perempuan">Perempuan</option>
+      </select>
+      <select id="status" class="w-full p-2 border rounded">
+        <option value="">Status Pernikahan</option>
+        <option value="Belum menikah">Belum menikah</option>
+        <option value="Sudah menikah">Sudah menikah</option>
+      </select>
+      <button onclick="mulaiChat()" class="bg-blue-600 text-white px-4 py-2 rounded">Mulai Konsultasi</button>
+    </div>
+
+    <!-- Chat Section -->
+    <div id="chat-section" class="hidden">
+      <div id="chat-box" class="border p-4 h-96 overflow-y-auto space-y-2 bg-white rounded dark:bg-gray-800"></div>
+      <div class="mt-4 flex">
+        <input type="text" id="user-input" placeholder="Tulis pertanyaan..." class="flex-1 p-2 border rounded" />
+        <button onclick="kirimPesan()" class="bg-green-600 text-white px-4 py-2 rounded ml-2">Kirim</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let biodata = {};
+
+    function mulaiChat() {
+      biodata.nama = document.getElementById('nama').value;
+      biodata.usia = document.getElementById('usia').value;
+      biodata.gender = document.getElementById('gender').value;
+      biodata.status = document.getElementById('status').value;
+
+      if (!biodata.nama || !biodata.usia || !biodata.gender || !biodata.status) {
+        alert('Harap lengkapi semua biodata.');
+        return;
+      }
+
+      document.getElementById('form-section').classList.add('hidden');
+      document.getElementById('chat-section').classList.remove('hidden');
+    }
+
+    async function kirimPesan() {
+      const input = document.getElementById('user-input');
+      const pesan = input.value.trim();
+      if (!pesan) return;
+
+      tampilkanPesan('user', pesan);
+      input.value = '';
+
+      const prompt = `Nama: ${biodata.nama}\nUsia: ${biodata.usia}\nGender: ${biodata.gender}\nStatus: ${biodata.status}\n\nPertanyaan: ${pesan}\n\nBerikan jawaban bijak dan memotivasi berdasarkan Al-Quran, Hadis, serta kisah Nabi.`;
+
+      tampilkanPesan('ai', 'Menunggu jawaban...');
+
+      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyBnxZNaCPTJvGDsZMUO-kIvy3NRMG0g98c', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }]
+        })
+      });
+
+      const data = await response.json();
+      const jawaban = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Maaf, terjadi kesalahan.';
+
+      hapusPesanSementara();
+      tampilkanPesan('ai', jawaban);
+    }
+
+    function tampilkanPesan(pengirim, teks) {
+      const chatBox = document.getElementById('chat-box');
+      const pesanEl = document.createElement('div');
+      pesanEl.className = pengirim === 'user' ? 'text-right' : 'text-left';
+      pesanEl.innerHTML = `<div class="inline-block p-2 rounded-lg ${pengirim === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-900 dark:bg-gray-700 dark:text-white'}">${teks}</div>`;
+      chatBox.appendChild(pesanEl);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function hapusPesanSementara() {
+      const chatBox = document.getElementById('chat-box');
+      const lastChild = chatBox.lastChild;
+      if (lastChild && lastChild.textContent === 'Menunggu jawaban...') {
+        chatBox.removeChild(lastChild);
+      }
+    }
+  </script>
+</body>
+</html>
